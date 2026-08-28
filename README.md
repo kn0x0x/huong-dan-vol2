@@ -1,4 +1,4 @@
-# Cheatsheet Volatility 2.6 cho thí sinh
+# Cheatsheet Volatility 2.6 
 
 > Tài liệu này chỉ hướng dẫn sử dụng công cụ **Volatility 2.6** ở mức cơ bản và so sánh cú pháp tương ứng với **Volatility 3**.  
 
@@ -49,7 +49,7 @@ memory.raw
 
 là file memory dump được cung cấp trong bài.
 
-Tên file `.raw` có thể khác, thí sinh tự thay lại đúng tên file đang có.
+Tên file `.raw` có thể khác, tự thay lại đúng tên file đang có.
 
 ---
 
