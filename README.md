@@ -1,7 +1,6 @@
 # Cheatsheet Volatility 2.6 cho thí sinh
 
 > Tài liệu này chỉ hướng dẫn sử dụng công cụ **Volatility 2.6** ở mức cơ bản và so sánh cú pháp tương ứng với **Volatility 3**.  
-> Không chứa gợi ý liên quan đến bất kỳ bài thi cụ thể nào.
 
 ---
 
