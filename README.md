@@ -1,503 +1,416 @@
-# Cheatsheet Volatility 2.6 – Phân tích Memory Dump Windows Server
+# Cheatsheet Volatility 2.6 cho thí sinh
 
-Tài liệu dùng nhanh cho thí sinh khi phân tích file memory dump:
-
-```text
-windows-server-memory-final3.raw
-```
-
-Khuyến nghị dùng **Volatility 2.6 standalone trên Windows**. Bản standalone không cần cài Python.
+> Tài liệu này chỉ hướng dẫn sử dụng công cụ **Volatility 2.6** ở mức cơ bản và so sánh cú pháp tương ứng với **Volatility 3**.  
+> Không chứa gợi ý liên quan đến bất kỳ bài thi cụ thể nào.
 
 ---
 
-## 1. Chuẩn bị thư mục làm bài
+## 1. Chuẩn bị Volatility 2.6 trên Windows
 
-Thí sinh tự tạo một thư mục bất kỳ, ví dụ:
+### Cách nhanh nhất: dùng bản standalone
 
-```text
-D:\CTF\memory-final\
-```
-
-Hoặc:
+Tải Volatility 2.6 standalone cho Windows:
 
 ```text
-C:\CTF\memory-final\
+https://downloads.volatilityfoundation.org/releases/2.6/volatility_2.6_win64_standalone.zip
 ```
 
-Trong thư mục đó đặt file memory dump:
+Giải nén ra một thư mục bất kỳ, ví dụ:
 
 ```text
-memory-final\
-│
-├── windows-server-memory-final3.raw
-└── tools\
-    └── volatility_2.6_win64_standalone\
-        └── volatility_2.6_win64_standalone.exe
+volatility_2.6_win64_standalone\
 ```
 
-> Không bắt buộc phải giống đường dẫn ví dụ. Chỉ cần các lệnh được chạy trong **thư mục chứa file `.raw`**.
+Bên trong sẽ có file:
+
+```text
+volatility_2.6_win64_standalone.exe
+```
+
+Bản standalone không cần cài Python 2.
 
 ---
 
-## 2. Tải Volatility 2.6 standalone
+## 2. Cấu trúc thư mục khuyến nghị
 
-Mở **CMD** tại thư mục chứa file `.raw`.
+Để dễ chạy lệnh, có thể đặt như sau:
 
-Ví dụ nếu file nằm ở `D:\CTF\memory-final\`:
-
-```cmd
-cd /d D:\CTF\memory-final
+```text
+memory-lab\
+├── memory.raw
+└── volatility_2.6_win64_standalone\
+    └── volatility_2.6_win64_standalone.exe
 ```
 
-Tải Volatility 2.6:
+Trong đó:
 
-```cmd
-mkdir tools
-cd tools
-curl.exe -L -o volatility_2.6_win64_standalone.zip https://downloads.volatilityfoundation.org/releases/2.6/volatility_2.6_win64_standalone.zip
-tar -xf volatility_2.6_win64_standalone.zip
-cd ..
+```text
+memory.raw
 ```
 
-Kiểm tra:
+là file memory dump được cung cấp trong bài.
 
-```cmd
-tools\volatility_2.6_win64_standalone\volatility_2.6_win64_standalone.exe --info | findstr /i "Win2016 Win10"
-```
+Tên file `.raw` có thể khác, thí sinh tự thay lại đúng tên file đang có.
 
 ---
 
-## 3. Profile dùng cho bài này
+## 3. Cú pháp chung
 
-Profile đã kiểm tra chạy được:
-
-```text
-Win2016x64_14393
-```
-
-Thiết lập biến lệnh cho dễ dùng:
+### Volatility 2
 
 ```cmd
-set VOL=tools\volatility_2.6_win64_standalone\volatility_2.6_win64_standalone.exe
-set MEM=windows-server-memory-final3.raw
-set PROFILE=Win2016x64_14393
-```
-
-Sau đó chạy theo mẫu:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% <plugin>
+volatility_2.6_win64_standalone.exe -f <file_memory> --profile=<profile> <plugin>
 ```
 
 Ví dụ:
 
 ```cmd
-%VOL% -f %MEM% --profile=%PROFILE% pslist
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=Win2016x64_14393 pslist
 ```
 
----
-
-## 4. Xác định hệ điều hành
+### Volatility 3
 
 ```cmd
-%VOL% -f %MEM% --profile=%PROFILE% imageinfo
-```
-
-Nếu `imageinfo` chạy lâu, có thể bỏ qua vì profile dùng cho bài này là:
-
-```text
-Win2016x64_14393
-```
-
-Kết luận nền tảng của image:
-
-```text
-Windows Server
-```
-
----
-
-## 5. Liệt kê process
-
-### Process đang active
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% pslist
-```
-
-Lưu ra file:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% pslist > vol2_pslist.txt
-```
-
-### Scan process, kể cả process đã thoát
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% psscan
-```
-
-Lưu ra file:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% psscan > vol2_psscan.txt
-```
-
-Process đáng chú ý trong bài:
-
-```text
-powershell.exe
-updater.exe
-wcache.exe
-telemetry.exe
-Robocopy.exe
-winpmem_mini_x
-```
-
-Lọc nhanh:
-
-```cmd
-findstr /i "powershell updater wcache telemetry robocopy winpmem" vol2_pslist.txt vol2_psscan.txt
-```
-
----
-
-## 6. Xem command line
-
-Đây là plugin rất quan trọng trong bài.
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% cmdline
-```
-
-Lưu ra file:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% cmdline > vol2_cmdline.txt
-```
-
-Lọc nhanh dòng đáng chú ý:
-
-```cmd
-findstr /i "powershell updater wcache telemetry portal ARTICLE OPERATOR SESSION URL winpmem" vol2_cmdline.txt
-```
-
-Các chuỗi có thể đáng chú ý:
-
-```text
-powershell.exe
-portal_memory.ps1
-PORTAL_SESSION
-ARTICLE_ID
-OPERATOR_HANDLE
-PORTAL_URL
-winpmem_mini_x64_rc2.exe
-```
-
----
-
-## 7. Registry hive
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% hivelist
-```
-
-Lưu ra file:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% hivelist > vol2_hivelist.txt
-```
-
-Hive thường cần chú ý:
-
-```text
-\REGISTRY\MACHINE\SYSTEM
-\REGISTRY\MACHINE\SOFTWARE
-\SystemRoot\System32\Config\SAM
-\SystemRoot\System32\Config\SECURITY
-\??\C:\Users\ADM\ntuser.dat
-```
-
-Đọc key registry nếu cần:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% printkey -K "Microsoft\Windows\CurrentVersion\Run"
-```
-
----
-
-## 8. Network / kết nối mạng
-
-Thử lần lượt:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% netscan
-```
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% connections
-```
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% connscan
-```
-
-Lưu kết quả:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% netscan > vol2_netscan.txt
-```
-
----
-
-## 9. DLL / module / injection
-
-Liệt kê DLL của process theo PID:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% dlllist -p <PID>
+python vol.py -f <file_memory> <plugin>
 ```
 
 Ví dụ:
 
 ```cmd
-%VOL% -f %MEM% --profile=%PROFILE% dlllist -p 4492
-```
-
-Kiểm tra injection/malware memory:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% malfind
-```
-
-Theo PID:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% malfind -p <PID>
+python vol.py -f memory.raw windows.pslist
 ```
 
 ---
 
-## 10. File scan / dump file
+## 4. Xác định profile trong Volatility 2
 
-Với memory image này, `filescan` có thể không ra hoặc chỉ ra header. Vẫn có thể thử:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% filescan
-```
-
-Lưu ra file:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% filescan > vol2_filescan.txt
-```
-
-Lọc tài liệu:
-
-```cmd
-findstr /i ".docx .xlsx .pdf .txt .locked .enc" vol2_filescan.txt
-```
-
-Dump file theo offset nếu `filescan` có kết quả:
-
-```cmd
-mkdir output
-%VOL% -f %MEM% --profile=%PROFILE% dumpfiles -Q <OFFSET> -D output
-```
-
-Ví dụ:
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% dumpfiles -Q 0xffffce8e12345678 -D output
-```
-
----
-
-## 11. Tìm chuỗi trong memory
-
-Có thể dùng Sysinternals `strings.exe` để hỗ trợ tìm chuỗi trong file `.raw`.
-
-Nếu có `strings.exe`:
-
-```cmd
-strings.exe -n 6 windows-server-memory-final3.raw > strings.txt
-```
-
-Lọc nhanh:
-
-```cmd
-findstr /i "ATTT flag key AES decrypt locked docx portal ARTICLE OPERATOR" strings.txt
-```
-
-Nếu chưa có `strings.exe`, có thể bỏ qua bước này và tập trung vào `cmdline`, `pslist`, `psscan`, `hivelist`.
-
----
-
-## 12. Workflow gợi ý
-
-### Bước 1 – Xác định OS
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% imageinfo
-```
-
-Kết luận:
-
-```text
-Windows Server
-```
-
-### Bước 2 – Tìm process
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% pslist > vol2_pslist.txt
-%VOL% -f %MEM% --profile=%PROFILE% psscan > vol2_psscan.txt
-findstr /i "powershell updater wcache telemetry robocopy winpmem" vol2_pslist.txt vol2_psscan.txt
-```
-
-### Bước 3 – Tìm command line
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% cmdline > vol2_cmdline.txt
-findstr /i "portal ARTICLE OPERATOR SESSION URL powershell updater wcache telemetry" vol2_cmdline.txt
-```
-
-### Bước 4 – Kiểm tra registry/network nếu cần
-
-```cmd
-%VOL% -f %MEM% --profile=%PROFILE% hivelist > vol2_hivelist.txt
-%VOL% -f %MEM% --profile=%PROFILE% netscan > vol2_netscan.txt
-```
-
----
-
-## 13. File chạy nhanh `run_vol2.bat`
-
-Tạo file `run_vol2.bat` trong **cùng thư mục với file `.raw`**.
-
-Nội dung:
-
-```bat
-@echo off
-cd /d "%~dp0"
-
-set VOL=tools\volatility_2.6_win64_standalone\volatility_2.6_win64_standalone.exe
-set MEM=windows-server-memory-final3.raw
-set PROFILE=Win2016x64_14393
-
-if not exist "%MEM%" (
-    echo [ERROR] Khong tim thay file %MEM%
-    echo Hay dat run_vol2.bat trong cung thu muc voi file .raw
-    pause
-    exit /b
-)
-
-if not exist "%VOL%" (
-    echo [ERROR] Khong tim thay Volatility 2.6 standalone.
-    echo Hay tai va giai nen vao thu muc tools\
-    pause
-    exit /b
-)
-
-echo [1] pslist
-"%VOL%" -f "%MEM%" --profile=%PROFILE% pslist > vol2_pslist.txt
-
-echo [2] psscan
-"%VOL%" -f "%MEM%" --profile=%PROFILE% psscan > vol2_psscan.txt
-
-echo [3] cmdline
-"%VOL%" -f "%MEM%" --profile=%PROFILE% cmdline > vol2_cmdline.txt
-
-echo [4] hivelist
-"%VOL%" -f "%MEM%" --profile=%PROFILE% hivelist > vol2_hivelist.txt
-
-echo [5] netscan
-"%VOL%" -f "%MEM%" --profile=%PROFILE% netscan > vol2_netscan.txt
-
-echo [6] interesting command lines
-findstr /i "powershell updater wcache telemetry robocopy portal ARTICLE OPERATOR SESSION URL winpmem" vol2_cmdline.txt > vol2_interesting_cmdline.txt
-
-echo.
-echo Done.
-echo Nen mo file vol2_interesting_cmdline.txt truoc.
-echo.
-pause
-```
+Volatility 2 cần `profile`.
 
 Chạy:
 
 ```cmd
-run_vol2.bat
+volatility_2.6_win64_standalone.exe -f memory.raw imageinfo
+```
+
+Hoặc:
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw kdbgscan
+```
+
+Sau đó chọn profile phù hợp từ kết quả gợi ý.
+
+Một số profile Windows thường gặp:
+
+```text
+Win7SP1x64
+Win10x64
+Win10x64_14393
+Win2012R2x64
+Win2016x64_14393
 ```
 
 ---
 
-## 14. Lỗi thường gặp
+## 5. Bảng lệnh tương ứng Volatility 2 và Volatility 3
 
-### Lỗi: Invalid profile
+| Mục đích | Volatility 2 | Volatility 3 |
+|---|---|---|
+| Gợi ý profile / thông tin image | `imageinfo` | `windows.info` |
+| Quét KDBG | `kdbgscan` | thường không cần trực tiếp |
+| Liệt kê process | `pslist` | `windows.pslist` |
+| Quét process trong memory | `psscan` | `windows.psscan` |
+| Cây tiến trình | `pstree` | `windows.pstree` |
+| Command line process | `cmdline` | `windows.cmdline` |
+| DLL đã load | `dlllist` | `windows.dlllist` |
+| Handles | `handles` | `windows.handles` |
+| Biến môi trường | `envars` | `windows.envars` |
+| Kết nối mạng | `netscan` | tùy bản Vol3 có thể là plugin network khác hoặc không có |
+| Scan file object | `filescan` | `windows.filescan.FileScan` hoặc `windows.filescan` tùy bản |
+| Dump file từ memory | `dumpfiles` | `windows.dumpfiles.DumpFiles` hoặc `windows.dumpfiles` tùy bản |
+| Registry hive list | `hivelist` | `windows.registry.hivelist` |
+| In registry key | `printkey` | `windows.registry.printkey` |
+| UserAssist | `userassist` | `windows.registry.userassist` |
+| Shimcache | `shimcache` | `windows.shimcachemem` |
+| Malfind | `malfind` | `windows.malfind` hoặc `windows.malware.malfind` |
+| Memory map process | `memmap` | `windows.memmap` |
+| Dump process memory | `memdump` | `windows.memmap --dump` hoặc plugin tương ứng tùy bản |
+| YARA scan | `yarascan` | `yarascan` / `vadyarascan` tùy bản |
+| Strings mapping | `strings` | `windows.strings` |
 
-Dùng sai profile. Với bài này dùng:
+---
+
+## 6. Các nhóm lệnh cơ bản trong Volatility 2
+
+### 6.1. Thông tin image
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw imageinfo
+```
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw kdbgscan
+```
+
+---
+
+### 6.2. Process
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> pslist
+```
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> psscan
+```
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> pstree
+```
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> cmdline
+```
+
+Lọc theo PID:
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> cmdline -p <PID>
+```
+
+---
+
+### 6.3. DLL, handle, environment
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> dlllist
+```
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> handles
+```
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> envars
+```
+
+Lọc theo PID:
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> dlllist -p <PID>
+```
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> handles -p <PID>
+```
+
+---
+
+### 6.4. Network
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> netscan
+```
+
+---
+
+### 6.5. File trong memory
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> filescan
+```
+
+Dump file theo offset:
+
+```cmd
+mkdir dump
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> dumpfiles -Q <OFFSET> -D dump
+```
+
+---
+
+### 6.6. Registry
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> hivelist
+```
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> printkey
+```
+
+Chỉ định hive offset:
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> printkey -o <HIVE_OFFSET>
+```
+
+Chỉ định key:
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> printkey -K "<REGISTRY_KEY>"
+```
+
+---
+
+### 6.7. Malfind và vùng nhớ tiến trình
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> malfind
+```
+
+Lọc theo PID:
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> malfind -p <PID>
+```
+
+Memory map:
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> memmap -p <PID>
+```
+
+Dump memory process:
+
+```cmd
+mkdir dump
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> memdump -p <PID> -D dump
+```
+
+---
+
+## 7. Ghi output ra file
+
+Nên ghi kết quả ra file để dễ đọc và tìm kiếm:
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> pslist > pslist.txt
+```
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> cmdline > cmdline.txt
+```
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> filescan > filescan.txt
+```
+
+Tìm kiếm trong output trên Windows:
+
+```cmd
+findstr /i "keyword" cmdline.txt
+```
+
+Ví dụ cú pháp chung:
+
+```cmd
+findstr /i "powershell" cmdline.txt
+```
+
+---
+
+## 8. Mẫu chạy nhanh
+
+Sau khi biết profile, có thể chạy nhóm lệnh cơ bản:
+
+```cmd
+set VOL=volatility_2.6_win64_standalone\volatility_2.6_win64_standalone.exe
+set MEM=memory.raw
+set PROFILE=Win2016x64_14393
+
+%VOL% -f %MEM% --profile=%PROFILE% pslist > pslist.txt
+%VOL% -f %MEM% --profile=%PROFILE% psscan > psscan.txt
+%VOL% -f %MEM% --profile=%PROFILE% pstree > pstree.txt
+%VOL% -f %MEM% --profile=%PROFILE% cmdline > cmdline.txt
+%VOL% -f %MEM% --profile=%PROFILE% hivelist > hivelist.txt
+%VOL% -f %MEM% --profile=%PROFILE% filescan > filescan.txt
+%VOL% -f %MEM% --profile=%PROFILE% netscan > netscan.txt
+```
+
+Thay:
+
+```text
+memory.raw
+```
+
+bằng đúng tên file memory dump.
+
+Thay:
 
 ```text
 Win2016x64_14393
 ```
 
-### Lỗi: File not found
+bằng profile phù hợp nếu `imageinfo` hoặc `kdbgscan` gợi ý profile khác.
 
-Kiểm tra đang đứng đúng thư mục chứa file `.raw` chưa:
+---
 
-```cmd
-dir windows-server-memory-final3.raw
-```
+## 9. Một số lỗi thường gặp
 
-Nếu không thấy file, hãy `cd` vào đúng thư mục hoặc chuyển file `.raw` vào thư mục đang làm bài.
+### Lỗi sai đường dẫn file memory
 
-### Lệnh chạy quá lâu
-
-Một số plugin scan toàn bộ RAM 5GB nên có thể lâu. Ưu tiên chạy trước:
-
-```cmd
-pslist
-cmdline
-hivelist
-psscan
-```
-
-### `filescan` không ra
-
-Với memory image này, `filescan` có thể không hữu ích. Tập trung vào:
+Thông báo thường gặp:
 
 ```text
-pslist
-psscan
-cmdline
-hivelist
-strings
+No such file or directory
 ```
+
+Kiểm tra lại tên file `.raw` và thư mục đang đứng.
 
 ---
 
-## 15. Bộ lệnh tối thiểu cần nhớ
+### Lỗi sai profile
 
-Chạy trong thư mục chứa file `.raw`:
+Nếu chạy không ra dữ liệu hoặc báo lỗi profile, thử lại:
 
 ```cmd
-set VOL=tools\volatility_2.6_win64_standalone\volatility_2.6_win64_standalone.exe
-set MEM=windows-server-memory-final3.raw
-set PROFILE=Win2016x64_14393
+volatility_2.6_win64_standalone.exe -f memory.raw imageinfo
+```
 
-%VOL% -f %MEM% --profile=%PROFILE% pslist
-%VOL% -f %MEM% --profile=%PROFILE% psscan
-%VOL% -f %MEM% --profile=%PROFILE% cmdline
-%VOL% -f %MEM% --profile=%PROFILE% hivelist
+hoặc:
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw kdbgscan
+```
+
+Sau đó chọn profile khác phù hợp hơn.
+
+---
+
+### Lệnh chạy lâu
+
+Một số plugin có thể chạy lâu với memory dump lớn, ví dụ:
+
+```text
+filescan
+malfind
+yarascan
+```
+
+Nên redirect output ra file:
+
+```cmd
+volatility_2.6_win64_standalone.exe -f memory.raw --profile=<profile> filescan > filescan.txt
 ```
 
 ---
 
-## 16. Ghi chú cho thí sinh
+## 10. Ghi nhớ nhanh
 
-- Dùng **Volatility 2.6 standalone** với profile `Win2016x64_14393`.
-- Chạy lệnh trong thư mục chứa file `windows-server-memory-final3.raw`.
-- Không cần cài Python nếu dùng bản standalone.
-- Tập trung vào `cmdline`: đây là nơi có nhiều thông tin điều tra nhất.
-- Khi thấy process đáng ngờ, luôn đối chiếu cả `pslist`, `psscan`, `cmdline`.
+Volatility 2 cần:
+
+```text
+-f memory.raw
+--profile=<profile>
+<plugin>
+```
+
+Volatility 3 thường không cần profile:
+
+```text
+-f memory.raw
+windows.<plugin>
+```
+
+Khi dùng Volatility 2, bước quan trọng nhất là xác định đúng `profile`.
